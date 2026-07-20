@@ -1,0 +1,23 @@
+{
+  "num_variables": 5,
+  "num_edges": 5,
+  "num_samples": 500,
+  "frac_discrete": 0.4,
+  "num_categories": 3,
+  "obs_noise": 0.1,
+  "lr": 0.001,
+  "delta": 1.0,
+  "batch_size": 128,
+  "num_iterations": 5000,
+  "num_envs": 8,
+  "replay_capacity": 100000,
+  "prefill": 500,
+  "min_exploration": 0.1,
+  "update_target_every": 1000,
+  "num_samples_posterior": 1000,
+  "prior": "uniform",
+  "seed": 0,
+  "device": "cpu",
+  "output_folder": "out-26-07-20-16-22",
+  "quiet": false
+}
