@@ -79,3 +79,23 @@ Outputs written to `--output_folder`: `arguments.json`, `data.npz`
 `ground_truth.npy`, `posterior.npy` (`(num_samples, N, N)`), `model.pt`,
 `results.json`.
 
+## Results (canonical smoke run, seed 0)
+
+Wall-clock ≈ 34 min on CPU (Apple Silicon; 5 000 gradient steps + 500 prefill +
+1 000 posterior samples). Seed-0 ground truth: 2 edges over 5 nodes (2 categorical,
+3 Gaussian); both true edges are categorical → Gaussian.
+
+| Metric (`results.json`) | Value | Baseline / target |
+|---|---|---|
+| Expected SHD | **0.137** | empty-graph SHD = 2.0 |
+| Expected edges | **2.137** | true edges = 2 |
+| Edge-marginal ROC-AUC | **1.000** | chance = 0.5 |
+| Edge-marginal PRC-AUC | **1.000** | — |
+| Average precision | **1.000** | — |
+
+The posterior concentrates on the true DAG: both true edges have marginal
+probability 1.0, spurious edges only 0.02–0.04. This demonstrates the pipeline
+learns correct mixed-type structure (one seed on one small graph — not a
+benchmarked SOTA claim).
+
+
