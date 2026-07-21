@@ -48,6 +48,7 @@ torch_dag_gfn/
   gflownet.py               controller: act / detailed-balance loss / step + posterior
   buffer.py                 replay buffer
   metrics.py                E-SHD, expected edges, ROC/PRC-AUC
+  report.py                 renders the run README.md from the saved artifacts
 ```
 
 ## Environment
@@ -77,7 +78,23 @@ Key flags: `--frac_discrete` (fraction of CLG-eligible nodes made categorical),
 Outputs written to `--output_folder`: `arguments.json`, `data.npz`
 (data + ground-truth adjacency + variable kinds/cardinalities),
 `ground_truth.npy`, `posterior.npy` (`(num_samples, N, N)`), `model.pt`,
-`results.json`.
+`results.json`, `losses.npy` (loss per gradient step), `run_meta.json`
+(timing/versions/hardware), and `README.md` — a rendered run report.
+
+## Run reports
+
+After training, `torch_dag_gfn/report.py` writes a `README.md` into the output
+folder: headline verdict (E-SHD vs. the empty-graph baseline), the exact command
+that reproduces the run, the ground-truth DAG and variable types, the metrics
+table with baselines, posterior edge marginals and threshold recovery, the loss
+trace, the environment record, and a file manifest.
+
+It reads only the saved artifacts, so any past run can be (re)reported without
+retraining — numpy is the only dependency:
+
+```bash
+python -m torch_dag_gfn.report out-26-07-20-16-22 [more-run-dirs ...]
+```
 
 ## Results (canonical smoke run, seed 0)
 

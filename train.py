@@ -7,12 +7,15 @@ Example:
         --output_folder results-smoke
 """
 import json
+import time
 import numpy as np
 import torch
 
 from argparse import ArgumentParser
+from datetime import datetime
 from pathlib import Path
 from tqdm.auto import trange
+from zoneinfo import ZoneInfo
 
 from torch_dag_gfn.data import sample_mixed_scm, type_mask_from_specs
 from torch_dag_gfn.scores import BICScore, get_prior
@@ -20,6 +23,13 @@ from torch_dag_gfn.env import DAGEnv
 from torch_dag_gfn.buffer import ReplayBuffer
 from torch_dag_gfn.gflownet import DAGGFlowNet, posterior_estimate
 from torch_dag_gfn.metrics import expected_shd, expected_edges, threshold_metrics
+from torch_dag_gfn.report import collect_run_meta, write_report
+
+
+def default_output_folder():
+    """Timestamped run folder `out-YY-MM-DD-hh-mm`, in US Eastern wall-clock time
+    (`America/New_York`, so it tracks EST/EDT) regardless of the machine's timezone."""
+    return datetime.now(ZoneInfo('America/New_York')).strftime('out-%y-%m-%d-%H-%M')
 
 
 def epsilon_schedule(iteration, prefill, num_iterations, min_exploration):
@@ -35,6 +45,7 @@ def epsilon_schedule(iteration, prefill, num_iterations, min_exploration):
 def main(args):
     rng = np.random.default_rng(args.seed)
     torch.manual_seed(args.seed)
+    started_at, start_time = datetime.now(), time.monotonic()
 
     # Generate the synthetic mixed dataset.
     ground_truth, data, var_specs = sample_mixed_scm(
@@ -63,6 +74,7 @@ def main(args):
 
     # Training loop.
     observations = env.reset()
+    losses = []  # detailed-balance loss per gradient step (reported by report.py)
     with trange(args.prefill + args.num_iterations, desc='Training') as pbar:
         for iteration in pbar:
             epsilon = epsilon_schedule(
@@ -75,6 +87,7 @@ def main(args):
             if iteration >= args.prefill and len(replay) >= args.batch_size:
                 batch = replay.sample(args.batch_size, rng)
                 loss = gflownet.step(batch)
+                losses.append(float(loss))
                 pbar.set_postfix(loss=f'{loss:.3f}', epsilon=f'{epsilon:.2f}')
 
     # Posterior estimate + metrics.
@@ -106,9 +119,22 @@ def main(args):
     )
     np.save(output / 'ground_truth.npy', ground_truth)
     np.save(output / 'posterior.npy', posterior)
+    np.save(output / 'losses.npy', np.asarray(losses, dtype=np.float32))
     torch.save(gflownet.online.state_dict(), output / 'model.pt')
     with open(output / 'results.json', 'w') as f:
         json.dump(results, f, indent=2)
+    finished_at = datetime.now()
+    with open(output / 'run_meta.json', 'w') as f:
+        json.dump(collect_run_meta(
+            started_at=started_at.isoformat(timespec='seconds'),
+            finished_at=finished_at.isoformat(timespec='seconds'),
+            duration_seconds=round(time.monotonic() - start_time, 1),
+        ), f, indent=2)
+
+    # Human-readable run report, built from the artifacts just written.
+    report = write_report(output)
+    if not args.quiet:
+        print(f'Wrote report to {report}')
 
     return results
 
@@ -148,7 +174,7 @@ if __name__ == '__main__':
         choices=['uniform', 'erdos_renyi', 'edge', 'fair'])
     misc.add_argument('--seed', type=int, default=0)
     misc.add_argument('--device', type=str, default='cpu')
-    misc.add_argument('--output_folder', type=str, default='output')
+    misc.add_argument('--output_folder', type=str, default=default_output_folder())
     misc.add_argument('--quiet', action='store_true')
 
     main(parser.parse_args())
