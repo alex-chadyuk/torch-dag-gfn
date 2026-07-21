@@ -127,11 +127,17 @@ class GFlowNetPolicy(nn.Module):
     log-policy over N**2 + 1 actions is assembled in `gflownet.log_policy`.
     """
     def __init__(self, num_variables, embed_dim=128, num_heads=4, key_size=64,
-                 num_backbone=3, num_head_layers=2):
+                 num_backbone=3, num_head_layers=2, widening_factor=2):
         super().__init__()
         self.num_variables = num_variables
-        hidden_dim = num_heads * key_size          # 256
-        init_scale = 2. / 5.                        # original uses num_layers = 5
+        hidden_dim = num_heads * key_size          # 256 at defaults
+        if 2 * embed_dim != hidden_dim:
+            raise ValueError(
+                'The residual stream is the concatenation of two endpoint '
+                'embeddings, so 2 * embed_dim must equal num_heads * key_size '
+                f'(got 2 * {embed_dim} != {num_heads} * {key_size}).')
+        # 2 / total depth along any path (original hard-codes num_layers = 5).
+        init_scale = 2. / (num_backbone + num_head_layers)
 
         self.embed = nn.Embedding(2 * num_variables, embed_dim)
 
@@ -145,7 +151,7 @@ class GFlowNetPolicy(nn.Module):
             return TransformerBlock(
                 input_dim=1, hidden_dim=hidden_dim, num_heads=num_heads,
                 key_size=key_size, embedding_size=embed_dim,
-                init_scale=init_scale, widening_factor=2)
+                init_scale=init_scale, widening_factor=widening_factor)
 
         self.backbone = nn.ModuleList(block() for _ in range(num_backbone))
         self.logits_blocks = nn.ModuleList(block() for _ in range(num_head_layers))
@@ -157,8 +163,8 @@ class GFlowNetPolicy(nn.Module):
         B = adjacency.shape[0]
         num_edges = self.num_variables ** 2
 
-        embeddings = self.embed(self.edges).reshape(num_edges, -1)   # (N**2, 256)
-        embeddings = embeddings.unsqueeze(0).expand(B, -1, -1)       # (B, N**2, 256)
+        embeddings = self.embed(self.edges).reshape(num_edges, -1)   # (N**2, 2*embed_dim)
+        embeddings = embeddings.unsqueeze(0).expand(B, -1, -1)       # (B, N**2, 2*embed_dim)
         inputs = adjacency.reshape(B, num_edges, 1)                  # (B, N**2, 1)
 
         h = embeddings

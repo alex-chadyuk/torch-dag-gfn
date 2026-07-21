@@ -86,9 +86,11 @@ def batch_random_choice(probs, masks, rng):
 
 class DAGGFlowNet:
     def __init__(self, num_variables, lr=1e-3, delta=1., update_target_every=1000,
-                 device='cpu'):
+                 device='cpu', **policy_kwargs):
+        """`policy_kwargs` are forwarded verbatim to `GFlowNetPolicy` (embed_dim,
+        num_heads, key_size, num_backbone, num_head_layers, widening_factor)."""
         self.device = torch.device(device)
-        self.online = GFlowNetPolicy(num_variables).to(self.device)
+        self.online = GFlowNetPolicy(num_variables, **policy_kwargs).to(self.device)
         self.target = copy.deepcopy(self.online)
         for param in self.target.parameters():
             param.requires_grad_(False)

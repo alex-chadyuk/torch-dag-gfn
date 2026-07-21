@@ -70,6 +70,12 @@ def main(args):
         delta=args.delta,
         update_target_every=args.update_target_every,
         device=args.device,
+        embed_dim=args.embed_dim,
+        num_heads=args.num_heads,
+        key_size=args.key_size,
+        num_backbone=args.num_backbone,
+        num_head_layers=args.num_head_layers,
+        widening_factor=args.widening_factor,
     )
 
     # Training loop.
@@ -153,6 +159,21 @@ if __name__ == '__main__':
         help='Number of states for categorical variables.')
     data_group.add_argument('--obs_noise', type=float, default=0.1,
         help='Std of the Gaussian observation noise.')
+
+    model_group = parser.add_argument_group('Model (Transformer policy)')
+    model_group.add_argument('--embed_dim', type=int, default=128,
+        help='Per-endpoint embedding size; an edge token concatenates two. '
+             'Constraint: 2 * embed_dim == num_heads * key_size.')
+    model_group.add_argument('--num_heads', type=int, default=4,
+        help='Attention heads per Transformer block.')
+    model_group.add_argument('--key_size', type=int, default=64,
+        help='Per-head key/value size (hidden_dim = num_heads * key_size).')
+    model_group.add_argument('--num_backbone', type=int, default=3,
+        help='Shared Transformer blocks before the two heads.')
+    model_group.add_argument('--num_head_layers', type=int, default=2,
+        help='Transformer blocks in each of the edge-logits and stop heads.')
+    model_group.add_argument('--widening_factor', type=int, default=2,
+        help='FFN hidden-width multiplier inside each Transformer block.')
 
     opt_group = parser.add_argument_group('Optimization')
     opt_group.add_argument('--lr', type=float, default=1e-3)

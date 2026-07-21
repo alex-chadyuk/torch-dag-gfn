@@ -75,6 +75,13 @@ Key flags: `--frac_discrete` (fraction of CLG-eligible nodes made categorical),
 `--prior {uniform,erdos_renyi,edge,fair}`, `--lr`, `--num_samples_posterior`,
 `--update_target_every`. Run `python train.py --help` for the full list.
 
+Transformer-policy flags (defaults reproduce the original architecture):
+`--embed_dim 128`, `--num_heads 4`, `--key_size 64`, `--num_backbone 3`,
+`--num_head_layers 2`, `--widening_factor 2`. The residual stream is the
+concatenation of two endpoint embeddings, so `2 * embed_dim` must equal
+`num_heads * key_size`; the weight-init scale follows total depth
+(`2 / (num_backbone + num_head_layers)`) automatically.
+
 Outputs written to `--output_folder`: `arguments.json`, `data.npz`
 (data + ground-truth adjacency + variable kinds/cardinalities),
 `ground_truth.npy`, `posterior.npy` (`(num_samples, N, N)`), `model.pt`,
