@@ -1,0 +1,10 @@
+{
+  "expected_shd": 29.055,
+  "expected_edges": 44.011,
+  "num_true_edges": 17,
+  "empty_graph_shd": 17.0,
+  "num_categorical": 3,
+  "roc_auc": 0.76293408929837,
+  "prc_auc": 0.5136575898301905,
+  "ave_prec": 0.31060277699596583
+}
