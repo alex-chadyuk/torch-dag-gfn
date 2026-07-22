@@ -24,7 +24,11 @@ import numpy as np
 ARGUMENT_GROUPS = [
     ('Data', ['num_variables', 'num_edges', 'num_samples', 'frac_discrete',
               'num_categories', 'obs_noise']),
-    ('Optimization', ['lr', 'delta', 'batch_size', 'num_iterations', 'num_envs']),
+    ('Model (Transformer policy)', ['embed_dim', 'num_heads', 'key_size',
+                                    'num_backbone', 'num_head_layers',
+                                    'widening_factor']),
+    ('Optimization', ['lr', 'delta', 'batch_size', 'num_iterations', 'num_envs',
+                      'max_parents']),
     ('Replay buffer', ['replay_capacity', 'prefill']),
     ('Miscellaneous', ['min_exploration', 'update_target_every',
                        'num_samples_posterior', 'prior', 'seed', 'device',

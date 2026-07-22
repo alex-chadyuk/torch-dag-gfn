@@ -47,6 +47,11 @@ def main(args):
     torch.manual_seed(args.seed)
     started_at, start_time = datetime.now(), time.monotonic()
 
+    # Resolve the "no cap" sentinel to the concrete in-degree bound (= no cap)
+    # so the effective value is recorded in arguments.json rather than `null`.
+    if args.max_parents is None:
+        args.max_parents = args.num_variables
+
     # Generate the synthetic mixed dataset.
     ground_truth, data, var_specs = sample_mixed_scm(
         num_variables=args.num_variables,
@@ -62,7 +67,8 @@ def main(args):
     prior = get_prior(args.prior)
     scorer = BICScore(data, var_specs, prior)
     type_mask = type_mask_from_specs(var_specs)
-    env = DAGEnv(args.num_envs, scorer, type_mask=type_mask)
+    env = DAGEnv(args.num_envs, scorer, type_mask=type_mask,
+                 max_parents=args.max_parents)
     replay = ReplayBuffer(args.replay_capacity, args.num_variables)
     gflownet = DAGGFlowNet(
         args.num_variables,
@@ -182,6 +188,11 @@ if __name__ == '__main__':
     opt_group.add_argument('--batch_size', type=int, default=128)
     opt_group.add_argument('--num_iterations', type=int, default=5000)
     opt_group.add_argument('--num_envs', type=int, default=8)
+    opt_group.add_argument('--max_parents', type=int, default=None,
+        help='Cap on the in-degree of every node in the sampled DAGs '
+             '(default: no cap, i.e. num_variables). Shrinks the search space '
+             'and forbids near-complete-graph collapse; also shortens '
+             'trajectories, so each iteration is cheaper.')
 
     replay_group = parser.add_argument_group('Replay buffer')
     replay_group.add_argument('--replay_capacity', type=int, default=100_000)
